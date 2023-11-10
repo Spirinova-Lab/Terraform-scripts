@@ -37,7 +37,7 @@ variable "create_ec2_deployment" {
 variable "vpc_id" {
   type        = string
   description = "ID of the vpc"
-  default     = "vpc-03b17fb842cf1c5fc"
+  default     = "vpc-id"
 }
 
 variable "ec2_subnet_id" {
@@ -63,13 +63,13 @@ variable "alb_subnet_ids" {
 variable "names" {
   type        = list(string)
   description = "List of Names for ECS services and Code Pipelines. For EC2 instance provide a single name only"
-  default     = ["node-app", "node-1"]
+  default     = ["node-app"]
 }
 
 variable "ecs_ports" {
   type        = list(number)
   description = "List of Port numbers for the application in ECS"
-  default     = [3000, 4000]
+  default     = [3000]
 }
 
 variable "create_cluster" {
@@ -179,25 +179,25 @@ variable "ssh_cidr_ips" {
 variable "repo_ids" {
   type        = list(string)
   description = "List of IDs of the source code repository"
-  default     = ["repo-name", "ebrevs"]
+  default     = ["repo-name"]
 }
 
 variable "repo_branch_names" {
   type        = list(string)
   description = "List of Names of the source code repo branch"
-  default     = ["main","crev"]
+  default     = ["main"]
 }
 
 variable "github_oauth_token" {
   type        = string
   description = "GitHub OAuth Token with permissions to access private repositories"
-  default     = "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"
+  default     = null
 }
 
 variable "repo_owner" {
   type        = string
   description = "GitHub Organization or Username"
-  default     = "jerinrathnam" #"github-owner-name"
+  default     = "github-owner-name"
 }
 
 
@@ -218,7 +218,7 @@ variable "certificate_arn" {
 variable "host_names" {
   type        = list(string)
   description = "List of names of domains. If you need to setup multiple domains, enter the domain names from the second applciations"
-  default     = ["test.gemjerin.site"]
+  default     = []
 }
 
 variable "host_paths" {
