@@ -67,7 +67,11 @@ resource "aws_ecs_service" "this" {
   lifecycle {
     ignore_changes = [
       task_definition,
-      desired_count
+      desired_count,
+      network_configuration,
+      launch_type,
+      deployment_controller,
+      load_balancer,
     ]
   }
 
@@ -140,7 +144,15 @@ resource "aws_ecs_task_definition" "this" {
 
   lifecycle {
     ignore_changes = [
-      container_definitions
+      container_definitions,
+      runtime_platform,
+      execution_role_arn,
+      task_role_arn,
+      family,
+      cpu,
+      memory,
+      network_mode,
+      requires_compatibilities
     ]
   }
 
@@ -222,7 +234,7 @@ resource "aws_ecr_repository" "this" {
 
   count = var.create_ecr_repository ? local.count : 0
 
-  name                 = var.name[count.index]
+  name                 = lower(var.name[count.index])
   force_delete         = true
   image_tag_mutability = "MUTABLE"
 

@@ -1,10 +1,10 @@
 terraform {
-  # backend "s3" {
-  #   bucket  = "terraform-state-file"
-  #   key     = "terraform.tfstate"
-  #   region  = "us-east-1"
-  #   profile = "default"
-  # }
+  backend "s3" {
+    bucket  = "cf-templates-1kgnmsqm99wdh-us-east-1" # bucket name for state file. Must be created manually
+    key     = "ecs/terraform.tfstate"                # folder-name/path/terraform.tfstate (you can change the foler-name for each terraform script.)
+    region  = "us-east-1"                            # region of the bucket 
+    profile = "default"                              # need aws profile configured
+  }
 }
 
 provider "aws" {

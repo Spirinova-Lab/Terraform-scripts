@@ -68,7 +68,6 @@ module "ec2" {
   volume_size      = var.volume_size
   region           = var.region
   port             = var.ec2_port
-  private_key_file = var.private_key_file
 }
 
 module "security-group-ec2" {
@@ -80,6 +79,13 @@ module "security-group-ec2" {
   myip_ssh                              = var.ssh_cidr_ips
   tcp_ports                             = [var.ec2_port]
   ingress_tcp_source_security_group_ids = [one(module.security-group-lb[*].security_group_id)]
+}
+
+resource "time_sleep" "ec2" {
+  count      = var.create_ec2_deployment ? 1 : 0
+  depends_on = [module.ec2]
+
+  create_duration = "60s"
 }
 
 ####################### CODE PIPELINE #######################################
@@ -129,7 +135,7 @@ module "ec2-pipeline" {
     "Name" = var.names[0]
   }
 
-  depends_on = [module.ec2]
+  depends_on = [time_sleep.ec2]
 }
 
 ########################### LOAD BALANCER #############################
@@ -221,4 +227,14 @@ resource "aws_s3_bucket_policy" "this" {
       ]
     }
   )
+}
+
+resource "aws_route53_record" "this" {
+  count = length(var.route53_record_names)
+
+  zone_id = length(var.route53_zone_ids) > 1 ? var.route53_zone_ids[count.index] : var.route53_zone_ids[0]
+  name    = var.route53_record_names[count.index]
+  type    = "CNAME"
+  ttl     = 300
+  records = [one(module.load-balancer[*].dns_name)]
 }

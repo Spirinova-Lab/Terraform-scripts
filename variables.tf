@@ -63,7 +63,7 @@ variable "alb_subnet_ids" {
 variable "names" {
   type        = list(string)
   description = "List of Names for ECS services and Code Pipelines. For EC2 instance provide a single name only"
-  default     = ["node-app"]
+  default     = ["Node-App-1"]
 }
 
 variable "ecs_ports" {
@@ -74,14 +74,14 @@ variable "ecs_ports" {
 
 variable "create_cluster" {
   type        = bool
-  description = "Whether ecs cluster needs to be create or not"
+  description = "Whether ecs cluster needs to be create or not. If false It will use existing ECS cluster"
   default     = true
 }
 
 variable "cluster_name" {
   type        = string
   description = "Name of the ECS cluster"
-  default     = "cluster-1"
+  default     = "cluster-name"
 }
 
 variable "assign_public_ip" {
@@ -138,12 +138,6 @@ variable "private_key_name" {
   default     = null
 }
 
-variable "private_key_file" {
-  type        = string
-  description = "file path of the private key"
-  default     = null
-}
-
 variable "instance_type" {
   type        = string
   description = "Provide the type of the EC2 Instance"
@@ -179,7 +173,7 @@ variable "ssh_cidr_ips" {
 variable "repo_ids" {
   type        = list(string)
   description = "List of IDs of the source code repository"
-  default     = ["repo-name"]
+  default     = ["nodejs-app"]
 }
 
 variable "repo_branch_names" {
@@ -191,15 +185,14 @@ variable "repo_branch_names" {
 variable "github_oauth_token" {
   type        = string
   description = "GitHub OAuth Token with permissions to access private repositories"
-  default     = null
+  default     = "ouath-token"
 }
 
 variable "repo_owner" {
   type        = string
   description = "GitHub Organization or Username"
-  default     = "github-owner-name"
+  default     = "github-username"
 }
-
 
 ######################## LOAD BALANCER ################################
 
@@ -258,4 +251,18 @@ variable "create_s3_bucket" {
   type        = bool
   description = "Whether to create s3 bucket for pipeline"
   default     = true
+}
+
+#################### ROUTE 53 #######################
+
+variable "route53_zone_ids" {
+  type = list(string)
+  description = "List of IDs of Route 53 Hosted zones. if same hosted zone for all sub domains single value is enough"
+  default = []
+}
+
+variable "route53_record_names" {
+  type = list(string)
+  description = "List of subdomains for your applications"
+  default = []
 }
