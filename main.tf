@@ -147,7 +147,6 @@ module "load-balancer" {
   certificate_arn       = var.certificate_arn
   host_names            = var.host_names
   host_paths            = var.host_paths
-  host_names_and_paths  = var.host_names_and_paths
   health_check_paths    = var.health_check_paths
   names                 = var.names
   load_balancer_name    = var.load_balancer_name

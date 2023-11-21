@@ -220,12 +220,6 @@ variable "host_paths" {
   default     = []
 }
 
-variable "host_names_and_paths" {
-  type        = list(map(string))
-  description = "List of key value pairs of Host names and host paths. For example [ {'host_head_1'='host_path_1'}, {'host_head_2'='host_path_2'} ]"
-  default     = []
-}
-
 variable "health_check_paths" {
   type        = list(string)
   description = "List of health check paths"
