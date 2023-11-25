@@ -194,6 +194,18 @@ variable "repo_owner" {
   default     = "github-username"
 }
 
+variable "source_provider" {
+  type        = string
+  description = "Name of the source provider for the code pipeline"
+  default     = "GitHub"
+}
+
+variable "source_owner" {
+  type        = string
+  description = "Owner of the source provider for the code pipeline"
+  default     = "ThirdParty"
+}
+
 ######################## LOAD BALANCER ################################
 
 variable "load_balancer_name" {
