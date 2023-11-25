@@ -250,13 +250,25 @@ variable "create_s3_bucket" {
 #################### ROUTE 53 #######################
 
 variable "route53_zone_ids" {
-  type = list(string)
+  type        = list(string)
   description = "List of IDs of Route 53 Hosted zones. if same hosted zone for all sub domains single value is enough"
-  default = []
+  default     = []
 }
 
 variable "route53_record_names" {
-  type = list(string)
+  type        = list(string)
   description = "List of subdomains for your applications"
-  default = []
+  default     = []
+}
+
+variable "sns_topic_arn" {
+  type        = string
+  description = "Only need to Provide SNS ARN, if there is existing SNS topic"
+  default     = null
+}
+
+variable "email_addresses" {
+  type        = list(string)
+  description = "List of Email address for code commit notification"
+  default     = ["example@gmail.com"]
 }

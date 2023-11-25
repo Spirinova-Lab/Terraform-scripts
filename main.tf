@@ -99,8 +99,12 @@ module "ecs-pipeline" {
   name               = var.names[count.index]
   github_oauth_token = var.github_oauth_token
   repo_owner         = var.repo_owner
-  repo_name          = var.repo_ids[count.index]
-  branch             = var.repo_branch_names[count.index]
+  repo_name          = var.repo_owner != null ? var.repo_ids[count.index] : null
+  branch             = var.repo_owner != null ? var.repo_branch_names[count.index] : null
+  source_owner       = var.source_owner
+  source_provider    = var.source_provider
+  repo_id            = var.repo_owner == null ? var.repo_ids[count.index] : null
+  repo_branch_name   = var.repo_owner ==null ? var.repo_branch_names[count.index] : null
   cluster_name       = var.cluster_name
   service_name       = one(module.ecs[*].ecs_service[count.index].name)
   s3_bucket_name     = local.s3_bucket
@@ -125,8 +129,12 @@ module "ec2-pipeline" {
   name               = var.names[0]
   github_oauth_token = var.github_oauth_token
   repo_owner         = var.repo_owner
-  repo_name          = var.repo_ids[count.index]
-  branch             = var.repo_branch_names[count.index]
+  repo_name          = var.repo_owner != null ? var.repo_ids[count.index] : null
+  branch             = var.repo_owner != null ? var.repo_branch_names[count.index] : null
+  source_owner       = var.source_owner
+  source_provider    = var.source_provider
+  repo_id            = var.repo_owner == null ? var.repo_ids[count.index] : null
+  repo_branch_name   = var.repo_owner ==null ? var.repo_branch_names[count.index] : null
   s3_bucket_name     = local.s3_bucket
   create_s3_bucket   = false
   connection_arn     = var.connection_arn != null ? var.connection_arn : one(aws_codestarconnections_connection.this[*].arn)
@@ -228,6 +236,8 @@ resource "aws_s3_bucket_policy" "this" {
   )
 }
 
+############################## ROUTE 53 ##################################
+
 resource "aws_route53_record" "this" {
   count = length(var.route53_record_names)
 
@@ -236,4 +246,97 @@ resource "aws_route53_record" "this" {
   type    = "CNAME"
   ttl     = 300
   records = [one(module.load-balancer[*].dns_name)]
+}
+
+######################### PIPELINE ALERTS ################################
+
+resource "aws_codestarnotifications_notification_rule" "this" {
+  count = length(var.names)
+
+  detail_type = "FULL"
+  name        = "${var.names[count.index]}-pipeline-notification"
+  resource    = module.ecs-pipeline[count.index].code_pipeline_arn
+
+  event_type_ids = [
+    "codepipeline-pipeline-pipeline-execution-failed",
+    "codepipeline-pipeline-pipeline-execution-succeeded"
+  ]
+
+  target {
+    address = var.sns_topic_arn == null ? one(aws_sns_topic.this[*].arn) : var.sns_topic_arn
+  }
+}
+
+resource "aws_sns_topic" "this" {
+  count = var.sns_topic_arn == null ? 1 : 0
+
+  name = "${var.names[0]}-pipeline-notification"
+}
+
+resource "aws_sns_topic_policy" "this" {
+  count = var.sns_topic_arn == null ? 1 : 0
+
+  arn    = aws_sns_topic.this[0].arn
+  policy = data.aws_iam_policy_document.this[0].json
+}
+
+data "aws_iam_policy_document" "this" {
+  count = var.sns_topic_arn == null ? 1 : 0
+
+  policy_id = "__default_policy_ID"
+
+  statement {
+    effect = "Allow"
+    sid    = "__default_statement_ID"
+
+    actions = [
+      "SNS:GetTopicAttributes",
+      "SNS:SetTopicAttributes",
+      "SNS:AddPermission",
+      "SNS:RemovePermission",
+      "SNS:DeleteTopic",
+      "SNS:Subscribe",
+      "SNS:ListSubscriptionsByTopic",
+      "SNS:Publish",
+      "SNS:Receive"
+    ]
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceOwner"
+
+      values = [
+        local.account_id,
+      ]
+    }
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+    resources = [
+      var.sns_topic_arn == null ? one(aws_sns_topic.this[*].arn) : var.sns_topic_arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    sid    = "AWSCodeStarNotifications_publish"
+    actions = [
+      "SNS:Publish"
+    ]
+    principals {
+      type        = "Service"
+      identifiers = ["codestar-notifications.amazonaws.com"]
+    }
+    resources = [
+      var.sns_topic_arn == null ? one(aws_sns_topic.this[*].arn) : var.sns_topic_arn
+    ]
+  }
+}
+
+resource "aws_sns_topic_subscription" "this" {
+  count = var.sns_topic_arn == null ? length(var.email_addresses) : 0
+
+  topic_arn = one(aws_sns_topic.this[*].arn)
+  protocol  = "email"
+  endpoint  = var.email_addresses[count.index]
 }
