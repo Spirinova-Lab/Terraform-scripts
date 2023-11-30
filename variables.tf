@@ -251,7 +251,7 @@ variable "image_identifier" {
 variable "repo_ids" {
   type        = list(string)
   description = "List of IDs of the source code repository"
-  default     = ["nodejs-app"]
+  default     = ["repo-id"]
 }
 
 variable "repo_branch_names" {
