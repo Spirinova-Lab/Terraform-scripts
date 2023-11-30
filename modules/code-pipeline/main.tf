@@ -233,9 +233,9 @@ resource "aws_codebuild_project" "this" {
   }
 
   environment {
-    compute_type                = "BUILD_GENERAL1_SMALL"
+    compute_type                = var.compute_type
     image                       = var.image_identifier
-    type                        = "LINUX_CONTAINER"
+    type                        = var.build_container_type
     image_pull_credentials_type = "CODEBUILD"
     privileged_mode             = var.privileged_mode
 
@@ -251,7 +251,7 @@ resource "aws_codebuild_project" "this" {
 
   source {
     type      = "CODEPIPELINE"
-    buildspec = file("buildspec.yml")
+    buildspec = file(var.build_spec)
   }
 
   tags = merge(

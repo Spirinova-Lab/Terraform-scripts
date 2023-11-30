@@ -32,6 +32,12 @@ variable "create_ec2_deployment" {
   default     = false
 }
 
+variable "create_eks_deployment" {
+  type        = bool
+  description = "For EKS deployment"
+  default     = false
+}
+
 ######################### VPC #######################################
 
 variable "vpc_id" {
@@ -58,7 +64,7 @@ variable "alb_subnet_ids" {
   default     = null
 }
 
-########################## ECS and EC2 ###############################
+########################## ECS and EC2 and EKS ###############################
 
 variable "names" {
   type        = list(string)
@@ -93,7 +99,7 @@ variable "assign_public_ip" {
 variable "cw_logs_retention_in_days" {
   type        = number
   description = "Specifies the number of days you want to retain log events in the specified log group. Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653, and 0"
-  default     = 30
+  default     = 60
 }
 
 variable "task_cpu" {
@@ -129,7 +135,7 @@ variable "create_eip" {
 variable "ec2_port" {
   type        = number
   description = "Port number for the application in EC2"
-  default     = null
+  default     = 300
 }
 
 variable "private_key_name" {
@@ -138,16 +144,10 @@ variable "private_key_name" {
   default     = null
 }
 
-variable "instance_type" {
-  type        = string
-  description = "Provide the type of the EC2 Instance"
-  default     = null
-}
-
-variable "volume_termination" {
+variable "volume_encryption" {
   type        = bool
-  description = "Select the volume of the instance should be delete or not"
-  default     = false
+  description = "Whether to encypt you ec2 root volume"
+  default     = true
 }
 
 variable "volume_size" {
@@ -156,19 +156,97 @@ variable "volume_size" {
   default     = 50
 }
 
-variable "volume_encryption" {
-  type        = bool
-  description = "Whether to encypt you ec2 root volume"
-  default     = true
-}
-
 variable "ssh_cidr_ips" {
   type        = list(string)
   description = "list of ssh Ips for ec2 instance"
   default     = ["0.0.0.0/0"]
 }
 
+variable "volume_termination" {
+  type        = bool
+  description = "Select the volume of the instance should be delete or not"
+  default     = false
+}
+
+variable "instance_type" {
+  type        = string
+  description = "Provide the type of the EC2 Instance"
+  default     = "t3.medium"
+}
+
+variable "eks_cluster_name" {
+  type        = string
+  description = "Name for EKS cluster"
+  default     = null
+}
+
+variable "cluster_version" {
+  type        = string
+  description = "Version of the EKS cluster"
+  default     = "1.26"
+}
+
+variable "node_max_size" {
+  type        = number
+  description = "maximun size of the nodes for autoscaling group"
+  default     = 5
+}
+
+variable "node_min_size" {
+  type        = number
+  description = "minimum size of the nodes for autoscaling group"
+  default     = 2
+}
+
+variable "node_desired_size" {
+  type        = number
+  description = "desired size of the nodes for autoscaling group"
+  default     = 2
+}
+
+variable "cluster_endpoint_private_access" {
+  type        = string
+  description = "Whether the Amazon EKS private API server endpoint is enabled."
+  default     = false
+}
+
+variable "cluster_endpoint_public_access" {
+  type        = string
+  description = "Whether the Amazon EKS public API server endpoint is enabled."
+  default     = true
+}
+
+variable "enabled_cluster_log_types" {
+  type        = list(string)
+  description = "List of EKS Cluster log types. Enter 'null' for disable logs"
+  default     = ["api", "audit", "authenticator"]
+}
+
+variable "env_vars" {
+  type        = map(any)
+  description = "Map of environment variables for code build project"
+  default     = {}
+}
+
 ################################## CODE PIPELINE #############################################
+
+variable "codebuild_compute_type" {
+  type        = string
+  description = "Type or aize of the server for code build project. Valid values: BUILD_GENERAL1_SMALL, BUILD_GENERAL1_MEDIUM, BUILD_GENERAL1_LARGE, BUILD_GENERAL1_2XLARGE"
+  default     = "BUILD_GENERAL1_SMALL"
+}
+
+variable "build_container_type" {
+  type        = string
+  description = "Type of build environment to use for related builds. Valid values: LINUX_CONTAINER, LINUX_GPU_CONTAINER, WINDOWS_CONTAINER (deprecated), WINDOWS_SERVER_2019_CONTAINER, ARM_CONTAINER."
+  default     = "LINUX_CONTAINER"
+}
+
+variable "image_identifier" {
+  type        = string
+  description = "Docker image to use for this build project."
+  default     = "aws/codebuild/amazonlinux2-x86_64-standard:4.0"
+}
 
 variable "repo_ids" {
   type        = list(string)
@@ -211,7 +289,7 @@ variable "source_owner" {
 variable "load_balancer_name" {
   type        = string
   description = "Name for load balancer"
-  default     = "lb-name"
+  default     = null
 }
 
 variable "certificate_arn" {
