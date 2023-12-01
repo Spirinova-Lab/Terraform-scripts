@@ -150,27 +150,27 @@ variable "volume_encryption" {
   default     = true
 }
 
-variable "volume_size" {
-  type        = number
-  description = "Size of the EC2 root volume"
-  default     = 50
-}
-
 variable "ssh_cidr_ips" {
   type        = list(string)
   description = "list of ssh Ips for ec2 instance"
   default     = ["0.0.0.0/0"]
 }
 
+variable "volume_size" {
+  type        = number
+  description = "Size of the EC2 root volume and EKS cluster nodes"
+  default     = 50
+}
+
 variable "volume_termination" {
   type        = bool
-  description = "Select the volume of the instance should be delete or not"
+  description = "Select the volume of the instance and EKS cluster nodes should be delete or not"
   default     = false
 }
 
 variable "instance_type" {
   type        = string
-  description = "Provide the type of the EC2 Instance"
+  description = "Provide the type of the EC2 Instance and EKS cluster nodes"
   default     = "t3.medium"
 }
 
