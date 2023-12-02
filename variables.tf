@@ -80,7 +80,7 @@ variable "ecs_ports" {
 
 variable "create_cluster" {
   type        = bool
-  description = "Whether ecs cluster needs to be create or not. If false It will use existing ECS cluster"
+  description = "Whether the ECS or EKS cluster needs to be create or not. If 'false' It will use existing ECS cluster"
   default     = true
 }
 
@@ -177,13 +177,19 @@ variable "instance_type" {
 variable "eks_cluster_name" {
   type        = string
   description = "Name for EKS cluster"
-  default     = null
+  default     = "eks-cluster-name"
 }
 
 variable "cluster_version" {
   type        = string
   description = "Version of the EKS cluster"
   default     = "1.26"
+}
+
+variable "node_ami_type" {
+  type        = string
+  description = "Type of Amazon Machine Image (AMI) associated with the EKS Node Group. Valid Values: AL2_x86_64 | AL2_x86_64_GPU | AL2_ARM_64 | CUSTOM | BOTTLEROCKET_ARM_64 | BOTTLEROCKET_x86_64 | BOTTLEROCKET_ARM_64_NVIDIA | BOTTLEROCKET_x86_64_NVIDIA | WINDOWS_CORE_2019_x86_64 | WINDOWS_FULL_2019_x86_64 | WINDOWS_CORE_2022_x86_64 | WINDOWS_FULL_2022_x86_64"
+  default     = "AL2_x86_64"
 }
 
 variable "node_max_size" {
@@ -288,7 +294,7 @@ variable "source_owner" {
 
 variable "load_balancer_name" {
   type        = string
-  description = "Name for load balancer"
+  description = "Name for load balancer. if this value is 'null' Load Balancer won't be created."
   default     = null
 }
 

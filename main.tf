@@ -102,6 +102,7 @@ module "eks-cluster" {
   vpc_id                          = var.vpc_id
   myip_ssh                        = var.ssh_cidr_ips
   private_key                     = var.private_key_name
+  ami_type                        = var.node_ami_type
   cluster_version                 = var.cluster_version
   min_size                        = var.node_min_size
   max_size                        = var.node_max_size
@@ -318,6 +319,22 @@ resource "aws_s3_bucket_policy" "this" {
       ]
     }
   )
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "this" {
+  count = var.create_s3_bucket ? 1 : 0
+
+  bucket = local.s3_bucket
+
+  rule {
+    id = "Delete Objects after 1 day"
+
+    expiration {
+      days = 1
+    }
+
+    status = "Enabled"
+  }
 }
 
 ############################## ROUTE 53 ##################################
