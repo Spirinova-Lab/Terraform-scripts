@@ -44,33 +44,7 @@ EOF
     Name = var.name
   }
 }
-/*
-resource "null_resource" "this" {
 
-  depends_on = [aws_instance.this]
-
-  connection {
-    type        = "ssh"
-    user        = "ec2-user"
-    private_key = file(var.private_key_file)
-    host        = one(aws_eip.this[*].public_ip)
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo dnf update",
-      "sudo dnf install postgresql15.x86_64 postgresql15-server -y",
-      "sudo yum install https://rpm.nodesource.com/pub_20.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm -y",
-      "sudo yum install nodejs -y --setopt=nodesource-nodejs.module_hotfixes=1",
-      "sudo yum install gcc-c++ make -y",
-      "sudo npm install -g pm2",
-      "pm2 startup",
-      "pm2 save",
-      "sudo chown node:node /home/node -R",
-    ]
-  }
-}
-*/
 resource "aws_eip" "this" {
   count    = var.create_eip ? 1 : 0
   instance = aws_instance.this.id

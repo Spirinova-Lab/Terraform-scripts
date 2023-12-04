@@ -158,3 +158,21 @@ variable "project_visibility" {
   description = "Specifies the visibility of the project's builds. Possible values are: PUBLIC_READ and PRIVATE. Default value is PRIVATE."
   default     = "PRIVATE"
 }
+
+variable "build_spec" {
+  type        = string
+  description = "Path of the build spec file"
+  default     = "buildspec-ecs.yml"
+}
+
+variable "compute_type" {
+  type        = string
+  description = "Type or aize of the server for code build project"
+  default     = "BUILD_GENERAL1_SMALL"
+}
+
+variable "build_container_type" {
+  type        = string
+  description = "Type of build environment to use for related builds. Valid values: LINUX_CONTAINER, LINUX_GPU_CONTAINER, WINDOWS_CONTAINER (deprecated), WINDOWS_SERVER_2019_CONTAINER, ARM_CONTAINER."
+  default     = "LINUX_CONTAINER"
+}

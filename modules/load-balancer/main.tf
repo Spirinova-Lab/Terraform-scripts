@@ -226,7 +226,7 @@ resource "aws_lb_listener_rule" "https" {
 resource "aws_lb_target_group" "this" {
   count = length(var.names)
 
-  name        = var.names[count.index]
+  name        = lower(var.names[count.index])
   port        = length(var.target_group_ports) > 1 ? var.target_group_ports[count.index] : var.target_group_ports[0]
   protocol    = length(var.protocol) > 1 ? var.protocol[count.index] : var.protocol[0]
   target_type = length(var.target_type) > 1 ? var.target_type[count.index] : var.target_type[0]

@@ -41,7 +41,6 @@ module "ecs" {
   task_memory               = var.task_memory
 }
 
-
 module "security-group-ecs" {
   source = "./modules/security-group"
   count  = var.create_ecs_deployment ? length(var.names) : 0
@@ -58,17 +57,18 @@ module "ec2" {
   source = "./modules/ec2"
   count  = var.create_ec2_deployment && var.create_ec2_server ? 1 : 0
 
-  name             = var.names[0]
-  amiID            = var.ami_id
-  create_eip       = var.create_eip
-  instance_type    = var.instance_type
-  sg_id            = one(module.security-group-ec2[*].security_group_id)
-  subnet_id        = var.ec2_subnet_id
-  private_key_name = var.private_key_name
-  volume_size      = var.volume_size
-  region           = var.region
-  port             = var.ec2_port
-  private_key_file = var.private_key_file
+  name               = var.names[0]
+  amiID              = var.ami_id
+  create_eip         = var.create_eip
+  instance_type      = var.instance_type
+  sg_id              = one(module.security-group-ec2[*].security_group_id)
+  subnet_id          = var.ec2_subnet_id
+  volume_termination = var.volume_termination
+  volume_encryption  = var.volume_encryption
+  private_key_name   = var.private_key_name
+  volume_size        = var.volume_size
+  region             = var.region
+  port               = var.ec2_port
 }
 
 module "security-group-ec2" {
@@ -82,25 +82,65 @@ module "security-group-ec2" {
   ingress_tcp_source_security_group_ids = [one(module.security-group-lb[*].security_group_id)]
 }
 
+resource "time_sleep" "ec2" {
+  count      = var.create_ec2_deployment && var.create_ec2_server ? 1 : 0
+  depends_on = [module.ec2]
+
+  create_duration = "60s"
+}
+
+######################## EKS CLUSTER #####################################
+
+module "eks-cluster" {
+  count  = var.create_eks_deployment && var.create_cluster ? 1 : 0
+  source = "./modules/eks-cluster"
+
+  name                            = var.eks_cluster_name
+  instance_types                  = [var.instance_type]
+  subnet_ids                      = var.ecs_subnet_ids == null ? slice(data.aws_subnets.this.ids, 0, 2) : var.ecs_subnet_ids
+  node_subnet_ids                 = var.ecs_subnet_ids == null ? data.aws_subnets.this.ids : var.ecs_subnet_ids
+  vpc_id                          = var.vpc_id
+  myip_ssh                        = var.ssh_cidr_ips
+  private_key                     = var.private_key_name
+  ami_type                        = var.node_ami_type
+  cluster_version                 = var.cluster_version
+  min_size                        = var.node_min_size
+  max_size                        = var.node_max_size
+  desired_size                    = var.node_desired_size
+  region                          = var.region
+  account_id                      = local.account_id
+  delete_on_termination           = var.volume_termination
+  enabled_cluster_log_types       = var.enabled_cluster_log_types
+  cluster_endpoint_private_access = var.cluster_endpoint_private_access
+  cluster_endpoint_public_access  = var.cluster_endpoint_public_access
+}
+
 ####################### CODE PIPELINE #######################################
 
 module "ecs-pipeline" {
   source = "./modules/code-pipeline"
   count  = var.create_ecs_deployment ? length(var.names) : 0
 
-  ecs_deployment     = var.create_ecs_deployment
-  ec2_deployment     = var.create_ec2_deployment
-  name               = var.names[count.index]
-  github_oauth_token = var.github_oauth_token
-  repo_owner         = var.repo_owner
-  repo_name          = var.repo_ids[count.index]
-  branch             = var.repo_branch_names[count.index]
-  cluster_name       = var.cluster_name
-  service_name       = one(module.ecs[*].ecs_service[count.index].name)
-  s3_bucket_name     = local.s3_bucket
-  create_s3_bucket   = false
-  connection_arn     = var.connection_arn != null ? var.connection_arn : one(aws_codestarconnections_connection.this[*].arn)
-  project_visibility = "PUBLIC_READ"
+  ecs_deployment       = var.create_ecs_deployment
+  ec2_deployment       = var.create_ec2_deployment
+  name                 = var.names[count.index]
+  github_oauth_token   = var.github_oauth_token
+  repo_owner           = var.repo_owner
+  repo_name            = var.repo_owner != null ? var.repo_ids[count.index] : null
+  branch               = var.repo_owner != null ? var.repo_branch_names[count.index] : null
+  source_owner         = var.source_owner
+  source_provider      = var.source_provider
+  repo_id              = var.repo_owner == null ? var.repo_ids[count.index] : null
+  repo_branch_name     = var.repo_owner == null ? var.repo_branch_names[count.index] : null
+  cluster_name         = var.cluster_name
+  service_name         = one(module.ecs[*].ecs_service[count.index].name)
+  s3_bucket_name       = local.s3_bucket
+  create_s3_bucket     = false
+  connection_arn       = var.connection_arn != null ? var.connection_arn : one(aws_codestarconnections_connection.this[*].arn)
+  project_visibility   = "PUBLIC_READ"
+  compute_type         = var.codebuild_compute_type
+  build_container_type = var.build_container_type
+  image_identifier     = var.image_identifier
 
   env_vars = {
     ECSNAME        = var.names[count.index]
@@ -119,8 +159,12 @@ module "ec2-pipeline" {
   name               = var.names[0]
   github_oauth_token = var.github_oauth_token
   repo_owner         = var.repo_owner
-  repo_name          = var.repo_ids[count.index]
-  branch             = var.repo_branch_names[count.index]
+  repo_name          = var.repo_owner != null ? var.repo_ids[count.index] : null
+  branch             = var.repo_owner != null ? var.repo_branch_names[count.index] : null
+  source_owner       = var.source_owner
+  source_provider    = var.source_provider
+  repo_id            = var.repo_owner == null ? var.repo_ids[count.index] : null
+  repo_branch_name   = var.repo_owner == null ? var.repo_branch_names[count.index] : null
   s3_bucket_name     = local.s3_bucket
   create_s3_bucket   = false
   connection_arn     = var.connection_arn != null ? var.connection_arn : one(aws_codestarconnections_connection.this[*].arn)
@@ -129,7 +173,63 @@ module "ec2-pipeline" {
     "Name" = var.names[0]
   }
 
-  depends_on = [module.ec2]
+  depends_on = [time_sleep.ec2]
+}
+
+module "eks-pipeline" {
+  source = "./modules/code-pipeline"
+  count  = var.create_eks_deployment ? length(var.names) : 0
+
+  ecs_deployment       = var.create_ecs_deployment
+  ec2_deployment       = var.create_ec2_deployment
+  backend_deployment   = true
+  name                 = var.names[count.index]
+  github_oauth_token   = var.github_oauth_token
+  repo_owner           = var.repo_owner
+  repo_name            = var.repo_owner != null ? var.repo_ids[count.index] : null
+  branch               = var.repo_owner != null ? var.repo_branch_names[count.index] : null
+  source_owner         = var.source_owner
+  source_provider      = var.source_provider
+  repo_id              = var.repo_owner == null ? var.repo_ids[count.index] : null
+  repo_branch_name     = var.repo_owner == null ? var.repo_branch_names[count.index] : null
+  s3_bucket_name       = local.s3_bucket
+  create_s3_bucket     = false
+  connection_arn       = var.connection_arn != null ? var.connection_arn : one(aws_codestarconnections_connection.this[*].arn)
+  project_visibility   = "PUBLIC_READ"
+  build_spec           = "buildspec-eks.yml"
+  compute_type         = var.codebuild_compute_type
+  build_container_type = var.build_container_type
+  image_identifier     = var.image_identifier
+
+  env_vars = merge(
+    {
+      "REPOSITORY_NAME"      = var.repo_ids[count.index],
+      "REPOSITORY_BRANCH"    = var.repo_branch_names[count.index],
+      "EKS_CLUSTER_NAME"     = var.eks_cluster_name
+      "REPOSITORY_URI"       = aws_ecr_repository.this[count.index].repository_url
+      "EKS_KUBECTL_ROLE_ARN" = module.eks-cluster[0].kubectl_role_arn
+    },
+  var.env_vars)
+
+  depends_on = [
+    module.eks-cluster
+  ]
+}
+
+resource "aws_ecr_repository" "this" {
+  count = var.create_eks_deployment ? length(var.names) : 0
+
+  name                 = lower(var.names[count.index])
+  force_delete         = true
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    "Name" = var.names[count.index]
+  }
 }
 
 ########################### LOAD BALANCER #############################
@@ -141,7 +241,6 @@ module "load-balancer" {
   certificate_arn       = var.certificate_arn
   host_names            = var.host_names
   host_paths            = var.host_paths
-  host_names_and_paths  = var.host_names_and_paths
   health_check_paths    = var.health_check_paths
   names                 = var.names
   load_balancer_name    = var.load_balancer_name
@@ -153,7 +252,6 @@ module "load-balancer" {
   target_type           = [var.create_ec2_deployment ? "instance" : "ip"]
   create_ec2_deployment = var.create_ec2_deployment
 }
-
 
 module "security-group-lb" {
   source = "./modules/security-group"
@@ -221,4 +319,125 @@ resource "aws_s3_bucket_policy" "this" {
       ]
     }
   )
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "this" {
+  count = var.create_s3_bucket ? 1 : 0
+
+  bucket = local.s3_bucket
+
+  rule {
+    id = "Delete Objects after 1 day"
+
+    expiration {
+      days = 1
+    }
+
+    status = "Enabled"
+  }
+}
+
+############################## ROUTE 53 ##################################
+
+resource "aws_route53_record" "this" {
+  count = length(var.route53_record_names)
+
+  zone_id = length(var.route53_zone_ids) > 1 ? var.route53_zone_ids[count.index] : var.route53_zone_ids[0]
+  name    = var.route53_record_names[count.index]
+  type    = "CNAME"
+  ttl     = 300
+  records = [one(module.load-balancer[*].dns_name)]
+}
+
+######################### PIPELINE ALERTS ################################
+
+resource "aws_codestarnotifications_notification_rule" "this" {
+  count = length(var.names)
+
+  detail_type = "FULL"
+  name        = "${var.names[count.index]}-pipeline-notification"
+  resource    = var.create_ecs_deployment ? module.ecs-pipeline[count.index].code_pipeline_arn : (var.create_ec2_deployment ? module.ec2-pipeline[0].code_pipeline_arn : module.eks-pipeline[count.index].code_pipeline_arn)
+
+  event_type_ids = [
+    "codepipeline-pipeline-pipeline-execution-failed",
+    "codepipeline-pipeline-pipeline-execution-succeeded"
+  ]
+
+  target {
+    address = var.sns_topic_arn == null ? one(aws_sns_topic.this[*].arn) : var.sns_topic_arn
+  }
+}
+
+resource "aws_sns_topic" "this" {
+  count = var.sns_topic_arn == null ? 1 : 0
+
+  name = "${var.names[0]}-pipeline-notification"
+}
+
+resource "aws_sns_topic_policy" "this" {
+  count = var.sns_topic_arn == null ? 1 : 0
+
+  arn    = aws_sns_topic.this[0].arn
+  policy = data.aws_iam_policy_document.this[0].json
+}
+
+data "aws_iam_policy_document" "this" {
+  count = var.sns_topic_arn == null ? 1 : 0
+
+  policy_id = "__default_policy_ID"
+
+  statement {
+    effect = "Allow"
+    sid    = "__default_statement_ID"
+
+    actions = [
+      "SNS:GetTopicAttributes",
+      "SNS:SetTopicAttributes",
+      "SNS:AddPermission",
+      "SNS:RemovePermission",
+      "SNS:DeleteTopic",
+      "SNS:Subscribe",
+      "SNS:ListSubscriptionsByTopic",
+      "SNS:Publish",
+      "SNS:Receive"
+    ]
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceOwner"
+
+      values = [
+        local.account_id,
+      ]
+    }
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+    resources = [
+      var.sns_topic_arn == null ? one(aws_sns_topic.this[*].arn) : var.sns_topic_arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    sid    = "AWSCodeStarNotifications_publish"
+    actions = [
+      "SNS:Publish"
+    ]
+    principals {
+      type        = "Service"
+      identifiers = ["codestar-notifications.amazonaws.com"]
+    }
+    resources = [
+      var.sns_topic_arn == null ? one(aws_sns_topic.this[*].arn) : var.sns_topic_arn
+    ]
+  }
+}
+
+resource "aws_sns_topic_subscription" "this" {
+  count = var.sns_topic_arn == null ? length(var.email_addresses) : 0
+
+  topic_arn = one(aws_sns_topic.this[*].arn)
+  protocol  = "email"
+  endpoint  = var.email_addresses[count.index]
 }

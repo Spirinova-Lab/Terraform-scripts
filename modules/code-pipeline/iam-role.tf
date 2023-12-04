@@ -228,7 +228,7 @@ resource "aws_iam_role_policy" "build_policy" {
 }
 
 resource "aws_iam_role_policy" "backend_build_policy" {
-  count = var.ec2_deployment == false && var.backend_deployment ? 1 : 0
+  count = var.ec2_deployment == false ? 1 : 0
 
   name = "${var.name}-backend-build-policy"
   role = aws_iam_role.build_role[0].id
@@ -239,20 +239,85 @@ resource "aws_iam_role_policy" "backend_build_policy" {
       Statement = [
         {
           Action = [
-            "cloudformation:*",
-            "lambda:*"
+            "ec2:CreateNetworkInterface",
+            "ec2:DescribeDhcpOptions",
+            "ec2:DescribeNetworkInterfaces",
+            "ec2:DeleteNetworkInterface",
+            "ec2:DescribeSubnets",
+            "ec2:DescribeSecurityGroups",
+            "ec2:DescribeVpcs",
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
+            "eks:Describe*"
           ]
           Effect   = "Allow"
           Resource = "*"
         },
         {
           Action = [
-            "iam:PassRole"
+            "ec2:CreateNetworkInterfacePermission"
+          ]
+          Effect   = "Allow"
+          Resource = "*"
+          Condition = {
+            "StringEquals" = {
+              "ec2:Subnet"            = "*",
+              "ec2:AuthorizedService" = "codebuild.amazonaws.com"
+            }
+          }
+        },
+        {
+          Action = [
+            "ecr:GetDownloadUrlForLayer",
+            "ecr:BatchGetImage",
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:PutImage",
+            "ecr:InitiateLayerUpload",
+            "ecr:UploadLayerPart",
+            "ecr:CompleteLayerUpload"
+          ]
+          Effect   = "Allow"
+          Resource = "*"
+        },
+        {
+          Action = [
+            "codebuild:CreateReportGroup",
+            "codebuild:CreateReport",
+            "codebuild:UpdateReport",
+            "codebuild:BatchPutTestCases",
+            "codebuild:BatchPutCodeCoverages"
           ]
           Effect = "Allow"
           Resource = [
-            "arn:aws:iam::${local.account_id}:role/Cloud_Formation_Role"
+            one(aws_codebuild_project.this[*].arn)
           ]
+        },
+        {
+          Action = [
+            "s3:PutObject",
+            "s3:GetObject",
+            "s3:GetObjectVersion"
+          ]
+          Effect = "Allow"
+          Resource = [
+            "arn:aws:s3:::${var.s3_bucket_name}",
+            "arn:aws:s3:::${var.s3_bucket_name}/*"
+          ]
+        },
+        {
+          Action = [
+            "ecr:GetAuthorizationToken"
+          ]
+          Effect   = "Allow"
+          Resource = "*"
+        },
+        {
+          Action = [
+            "sts:AssumeRole"
+          ]
+          Effect   = "Allow"
+          Resource = "arn:aws:iam::${local.account_id}:role/*"
         }
       ]
     }
