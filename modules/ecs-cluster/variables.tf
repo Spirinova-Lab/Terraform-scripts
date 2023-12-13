@@ -331,3 +331,9 @@ variable "task_min_capacity" {
   description = "List of minimum capacity number for task. If a single value is same for all services, then provide one value is enough"
   default     = [1]
 }
+
+variable "ignore_changes" {
+  type        = bool
+  description = "Whehter to ignore changes configuration should be apply"
+  default     = true
+}

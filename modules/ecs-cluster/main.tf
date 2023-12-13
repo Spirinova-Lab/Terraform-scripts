@@ -33,11 +33,52 @@ resource "aws_ecs_cluster" "this" {
 
 resource "aws_ecs_service" "this" {
 
-  count = local.count
+  count = var.ignore_changes ? 0 : local.count
 
   name            = var.name[count.index]
   cluster         = local.cluster_arn
   task_definition = aws_ecs_task_definition.this[count.index].arn
+  desired_count   = length(var.task_desired_count) > 1 ? var.task_desired_count[count.index] : var.task_desired_count[0]
+  launch_type     = var.task_launch_type
+
+  depends_on = [aws_ecs_task_definition.this]
+
+  deployment_controller {
+    type = var.deployment_controller
+  }
+
+  dynamic "load_balancer" {
+
+    for_each = var.load_balancing ? [1] : []
+
+    content {
+      target_group_arn = var.target_group_names != null ? "arn:aws:elasticloadbalancing:${local.region}:${local.account_id}:targetgroup/${var.target_group_names[count.index]}" : var.target_group_arns[count.index]
+      container_name   = var.container_name != null ? var.container_name[count.index] : var.name[count.index]
+      container_port   = length(var.port) > 1 ? var.port[count.index] : var.port[0]
+    }
+  }
+
+  network_configuration {
+    subnets          = var.subnet_ids
+    security_groups  = [length(var.security_groups) > 1 ? var.security_groups[count.index] : var.security_groups[0]]
+    assign_public_ip = var.assign_public_ip
+  }
+
+  tags = merge(
+    {
+      "Name" = var.name[count.index]
+    },
+    var.tags
+  )
+}
+
+resource "aws_ecs_service" "ignore_changes" {
+
+  count = var.ignore_changes ? local.count : 0
+
+  name            = var.name[count.index]
+  cluster         = local.cluster_arn
+  task_definition = aws_ecs_task_definition.ignore_changes[count.index].arn
   desired_count   = length(var.task_desired_count) > 1 ? var.task_desired_count[count.index] : var.task_desired_count[0]
   launch_type     = var.task_launch_type
 
@@ -87,7 +128,72 @@ resource "aws_ecs_service" "this" {
 
 resource "aws_ecs_task_definition" "this" {
 
-  count = local.count
+  count = var.ignore_changes ? 0 : local.count
+
+  family                   = var.name[count.index]
+  cpu                      = length(var.task_cpu) > 1 ? var.task_cpu[count.index] : var.task_cpu[0]
+  memory                   = length(var.task_memory) > 1 ? var.task_memory[count.index] : var.task_memory[0]
+  network_mode             = var.network_mode
+  requires_compatibilities = [var.task_launch_type]
+
+  container_definitions = jsonencode(
+    [
+      {
+        name      = var.container_name != null ? var.container_name[count.index] : var.name[count.index]
+        image     = var.create_ecr_repository ? "${aws_ecr_repository.this[count.index].repository_url}:${length(var.image_tags) > 1 ? var.image_tags[count.index] : var.image_tags[0]}" : "${local.account_id}.dkr.ecr.${local.region}.amazonaws.com/${var.ecr_repo_names[count.index]}:${length(var.image_tags) > 1 ? var.image_tags[count.index] : var.image_tags[0]}"
+        cpu       = length(var.container_cpu) == 0 ? null : length(var.container_cpu) > 1 ? var.container_cpu[count.index] : var.container_cpu[0]
+        memory    = length(var.container_memory) == 0 ? null : length(var.container_memory) > 1 ? var.container_memory[count.index] : var.container_memory[0]
+        essential = true
+
+        command          = var.task_commands
+        entrypoint       = var.task_entry_points
+        environmentFiles = var.task_env_files
+        healthCheck      = var.task_health_check
+        hostname         = var.task_host_name
+        mountPoints      = var.task_mount_point
+        volumesFrom      = var.task_volumes_from
+        volume           = var.task_volume
+
+        logConfiguration = {
+          logDriver = var.container_log_driver
+          options = {
+            awslogs-region        = local.region
+            awslogs-group         = var.create_cloudwatch_log_group ? "/ecs/${var.name[count.index]}" : var.cloudwatch_log_group_names[count.index]
+            awslogs-stream-prefix = "ecs"
+          }
+        }
+
+        environment = var.task_env_vars
+
+        portMappings = [
+          {
+            containerPort = length(var.port) > 1 ? var.port[count.index] : var.port[0]
+            hostPort      = length(var.host_port) > 0 ? (length(var.host_port) > 1 ? var.host_port[count.index] : var.host_port[0]) : length(var.port) > 1 ? var.port[count.index] : var.port[0]
+          }
+        ]
+      }
+    ]
+  )
+
+  execution_role_arn = var.ecs_task_role_name != null ? "arn:aws:iam::${local.account_id}:role/${var.ecs_task_role_name}" : aws_iam_role.this[0].arn
+  task_role_arn      = var.ecs_task_role_name != null ? "arn:aws:iam::${local.account_id}:role/${var.ecs_task_role_name}" : aws_iam_role.this[0].arn
+
+  runtime_platform {
+    operating_system_family = var.operating_system_family
+    cpu_architecture        = var.cpu_architecture
+  }
+
+  tags = merge(
+    {
+      "Name" = var.name[count.index]
+    },
+    var.tags
+  )
+}
+
+resource "aws_ecs_task_definition" "ignore_changes" {
+
+  count = var.ignore_changes ? local.count : 0
 
   family                   = var.name[count.index]
   cpu                      = length(var.task_cpu) > 1 ? var.task_cpu[count.index] : var.task_cpu[0]
@@ -172,7 +278,7 @@ resource "aws_appautoscaling_target" "this" {
 
   max_capacity       = length(var.task_max_capacity) > 1 ? var.task_max_capacity[count.index] : var.task_max_capacity[0]
   min_capacity       = length(var.task_min_capacity) > 1 ? var.task_min_capacity[count.index] : var.task_min_capacity[0]
-  resource_id        = "service/${local.cluster_name}/${aws_ecs_service.this[count.index].name}"
+  resource_id        = "service/${local.cluster_name}/${var.ignore_changes ? aws_ecs_service.ignore_changes[count.index].name : aws_ecs_service.this[count.index].name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }

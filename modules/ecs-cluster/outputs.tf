@@ -1,10 +1,10 @@
 output "ecs_service" {
-  value       = aws_ecs_service.this[*]
+  value       = var.ignore_changes ? aws_ecs_service.ignore_changes[*] : aws_ecs_service.this[*]
   description = "Full details about ECS Services"
 }
 
 output "ecs_task_definition" {
-  value       = aws_ecs_task_definition.this[*]
+  value       = var.ignore_changes ? aws_ecs_task_definition.ignore_changes[*] : aws_ecs_task_definition.this[*]
   description = "Full details about ECS Task Definitions"
 }
 
