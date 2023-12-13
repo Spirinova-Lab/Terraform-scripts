@@ -90,6 +90,12 @@ variable "cluster_name" {
   default     = "cluster-name"
 }
 
+variable "ignore_changes" {
+  type        = bool
+  description = "Whehter to ignore changes configuration should be apply"
+  default     = true
+}
+
 variable "assign_public_ip" {
   type        = bool
   description = "Whether the public ip for ECS service should be created"

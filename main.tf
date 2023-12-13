@@ -39,6 +39,7 @@ module "ecs" {
   cw_logs_retention_in_days = var.cw_logs_retention_in_days
   task_cpu                  = var.task_cpu
   task_memory               = var.task_memory
+  ignore_changes            = var.ignore_changes
 }
 
 module "security-group-ecs" {
