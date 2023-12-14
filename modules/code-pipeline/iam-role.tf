@@ -221,6 +221,13 @@ resource "aws_iam_role_policy" "build_policy" {
           Resource = [
             "*"
           ]
+        },
+        {
+          Action = [
+            "secretsmanager:GetSecretValue"
+          ]
+          Effect   = "Allow"
+          Resource = var.secret_id
         }
       ]
     }

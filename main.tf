@@ -142,10 +142,13 @@ module "ecs-pipeline" {
   compute_type         = var.codebuild_compute_type
   build_container_type = var.build_container_type
   image_identifier     = var.image_identifier
+  secret_id            = var.secrets_manager_arn == null ? aws_secretsmanager_secret.this[0].id : var.secrets_manager_arn
 
   env_vars = {
-    ECSNAME        = var.names[count.index]
-    REPOSITORY_URI = one(module.ecs[*].ecr_repository[count.index].repository_url)
+    ECSNAME         = var.names[count.index]
+    REPOSITORY_URI  = one(module.ecs[*].ecr_repository[count.index].repository_url)
+    SECRET_USERNAME = "${var.secrets_manager_arn == null ? aws_secretsmanager_secret.this[0].id : var.secrets_manager_arn}:username"
+    SECRET_PASSWORD = "${var.secrets_manager_arn == null ? aws_secretsmanager_secret.this[0].id : var.secrets_manager_arn}:password"
   }
 
   depends_on = [module.ecs]
@@ -201,6 +204,7 @@ module "eks-pipeline" {
   compute_type         = var.codebuild_compute_type
   build_container_type = var.build_container_type
   image_identifier     = var.image_identifier
+  secret_id            = var.secrets_manager_arn == null ? aws_secretsmanager_secret.this[0].id : var.secrets_manager_arn
 
   env_vars = merge(
     {
@@ -209,6 +213,8 @@ module "eks-pipeline" {
       "EKS_CLUSTER_NAME"     = var.eks_cluster_name
       "REPOSITORY_URI"       = aws_ecr_repository.this[count.index].repository_url
       "EKS_KUBECTL_ROLE_ARN" = module.eks-cluster[0].kubectl_role_arn
+      "SECRET_USERNAME"      = "${var.secrets_manager_arn == null ? aws_secretsmanager_secret.this[0].id : var.secrets_manager_arn}:username"
+      "SECRET_PASSWORD"      = "${var.secrets_manager_arn == null ? aws_secretsmanager_secret.this[0].id : var.secrets_manager_arn}:password"
     },
   var.env_vars)
 
@@ -445,4 +451,26 @@ resource "aws_sns_topic_subscription" "this" {
   topic_arn = one(aws_sns_topic.this[*].arn)
   protocol  = "email"
   endpoint  = var.email_addresses[count.index]
+}
+
+################## SECRETS MANAGER ###########################
+
+resource "aws_secretsmanager_secret" "this" {
+  count = var.secrets_manager_arn == null || var.create_secrets_manager ? 1 : 0
+
+  name                    = var.secret_name
+  kms_key_id              = var.secrets_manager_kms_key_id
+  recovery_window_in_days = var.kms_key_recovery_window_in_days
+}
+
+resource "aws_secretsmanager_secret_version" "this" {
+  count = var.secrets_manager_arn == null || var.create_secrets_manager ? 1 : 0
+
+  secret_id = aws_secretsmanager_secret.this[0].id
+  secret_string = jsonencode(
+    {
+      username = var.docker_username,
+      password = var.docker_password
+    }
+  )
 }

@@ -176,3 +176,9 @@ variable "build_container_type" {
   description = "Type of build environment to use for related builds. Valid values: LINUX_CONTAINER, LINUX_GPU_CONTAINER, WINDOWS_CONTAINER (deprecated), WINDOWS_SERVER_2019_CONTAINER, ARM_CONTAINER."
   default     = "LINUX_CONTAINER"
 }
+
+variable "secret_id" {
+  type        = string
+  description = "ARN of the secrets manager"
+  default     = null
+}
