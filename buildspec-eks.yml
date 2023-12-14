@@ -1,14 +1,21 @@
 ---
 version: 0.2
+env:
+  secrets-manager:
+    USERNAME: $SECRET_USERNAME
+    PASSWORD: $SECRET_PASSWORD
+
 phases:
   pre_build:
     commands:
       - TAG="$REPOSITORY_NAME.$REPOSITORY_BRANCH.$ENVIRONMENT_NAME.$(date +%Y-%m-%d.%H.%M.%S).$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
       - sed -i 's@NAMESPACE@'"$NS"'@' deployment.yml
       - sed -i 's@CONTAINERPORT@'"$CONTAINER_PORT"'@' deployment.yml
-      - echo Logging in to Amazon ECR...
       - aws --version
+      - echo Logging in to Amazon ECR...
       - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - echo logging in to Docker Registry
+      - docker login -u ${USERNAME} -p ${PASSWORD}
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
 

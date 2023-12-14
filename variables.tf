@@ -374,3 +374,45 @@ variable "email_addresses" {
   description = "List of Email address for code commit notification"
   default     = ["example@gmail.com"]
 }
+
+################## SECRETS MANAGER ###########################
+
+variable "create_secrets_manager" {
+  type        = bool
+  description = "whether to create secrets manager or not"
+  default     = true
+}
+
+variable "secret_name" {
+  type        = string
+  description = "Name for the secrets manager"
+  default     = "secret-name"
+}
+
+variable "secrets_manager_arn" {
+  type        = string
+  description = "ARN of the secrets manager. If you have existing Secrets Manager, Provide the ARN here"
+  default     = null
+}
+
+variable "docker_username" {
+  type        = string
+  description = "Username of the Docker hub registry"
+}
+
+variable "docker_password" {
+  type        = string
+  description = "Username of docker hub password"
+}
+
+variable "secrets_manager_kms_key_id" {
+  type        = string
+  description = "ARN or Id of the AWS KMS key to be used to encrypt the secret values in the versions stored in this secret"
+  default     = null # Not needed if you use default KMS key
+}
+
+variable "kms_key_recovery_window_in_days" {
+  type        = number
+  description = "Number of days that AWS Secrets Manager waits before it can delete the secret. This value can be 0 to force deletion without recovery or range from 7 to 30 days."
+  default     = 30
+}
