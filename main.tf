@@ -7,6 +7,8 @@ resource "aws_codestarconnections_connection" "this" {
   provider_type = "GitHub"
 }
 
+################### DATA SOURCES & LOCALS ###############################
+
 data "aws_subnets" "this" {
   filter {
     name   = "vpc-id"
@@ -15,6 +17,11 @@ data "aws_subnets" "this" {
 }
 
 data "aws_caller_identity" "this" {}
+
+data "aws_eks_cluster_auth" "this" {
+  count = var.create_eks_deployment ? 1 : 0
+  name  = var.eks_cluster_name
+}
 
 locals {
   account_id = data.aws_caller_identity.this.account_id
@@ -114,6 +121,40 @@ module "eks-cluster" {
   enabled_cluster_log_types       = var.enabled_cluster_log_types
   cluster_endpoint_private_access = var.cluster_endpoint_private_access
   cluster_endpoint_public_access  = var.cluster_endpoint_public_access
+}
+
+###################################### CONFIG MAP ################################################
+
+resource "kubernetes_config_map_v1_data" "aws-auth" {
+  count = var.create_eks_deployment && var.create_cluster ? 1 : 0
+
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+
+  force = true
+
+  data = {
+    mapRoles = yamlencode(
+      [
+        {
+          rolearn  = module.eks-cluster[0].kubectl_role_arn
+          username = "build"
+          groups   = ["system:masters"]
+        },
+        {
+          rolearn  = module.eks-cluster[0].ng_role_arn
+          username = "system:node:{{EC2PrivateDNSName}}"
+          groups   = ["system:bootstrappers", "system:nodes"]
+        }
+      ]
+    )
+  }
+
+  depends_on = [
+    module.eks-cluster
+  ]
 }
 
 ####################### CODE PIPELINE #######################################

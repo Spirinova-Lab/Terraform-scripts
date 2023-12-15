@@ -33,3 +33,8 @@ output "kubectl_role_arn" {
   description = "ARN of the kubectl iam role"
   value       = one(aws_iam_role.kubectl_role[*].arn)
 }
+
+output "ng_role_arn" {
+  description = "ARN of the Node Group iam role"
+  value       = aws_iam_role.node_group.arn
+}

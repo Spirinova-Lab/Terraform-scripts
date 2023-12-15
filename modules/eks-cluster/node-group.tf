@@ -49,33 +49,33 @@ resource "random_integer" "rand" {
 
 ###################################### CONFIG MAP ################################################
 
-resource "kubernetes_config_map_v1_data" "aws-auth" {
+# resource "kubernetes_config_map_v1_data" "aws-auth" {
 
-  metadata {
-    name      = "aws-auth"
-    namespace = "kube-system"
-  }
+#   metadata {
+#     name      = "aws-auth"
+#     namespace = "kube-system"
+#   }
 
-  force = true
+#   force = true
 
-  data = {
-    mapRoles = yamlencode(
-      [
-        {
-          rolearn  = aws_iam_role.kubectl_role[0].arn
-          username = "build"
-          groups   = ["system:masters"]
-        },
-        {
-          rolearn  = aws_iam_role.node_group.arn
-          username = "system:node:{{EC2PrivateDNSName}}"
-          groups   = ["system:bootstrappers", "system:nodes"]
-        }
-      ]
-    )
-  }
+#   data = {
+#     mapRoles = yamlencode(
+#       [
+#         {
+#           rolearn  = aws_iam_role.kubectl_role[0].arn
+#           username = "build"
+#           groups   = ["system:masters"]
+#         },
+#         {
+#           rolearn  = aws_iam_role.node_group.arn
+#           username = "system:node:{{EC2PrivateDNSName}}"
+#           groups   = ["system:bootstrappers", "system:nodes"]
+#         }
+#       ]
+#     )
+#   }
 
-  depends_on = [
-    aws_eks_node_group.ng
-  ]
-}
+#   depends_on = [
+#     aws_eks_node_group.ng
+#   ]
+# }
