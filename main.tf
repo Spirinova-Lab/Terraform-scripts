@@ -293,7 +293,7 @@ module "load-balancer" {
   health_check_paths    = var.health_check_paths
   names                 = var.names
   load_balancer_name    = var.load_balancer_name
-  ports                 = var.ec2_port == null ? var.ecs_ports : [var.ec2_port]
+  ports                 = var.create_ec2_deployment ? [var.ec2_port] : var.ecs_ports
   security_groups       = [module.security-group-lb[0].security_group_id]
   subnet_ids            = var.alb_subnet_ids == null ? data.aws_subnets.this.ids : var.alb_subnet_ids
   vpc_id                = var.vpc_id
