@@ -141,7 +141,7 @@ variable "create_eip" {
 variable "ec2_port" {
   type        = number
   description = "Port number for the application in EC2"
-  default     = 300
+  default     = 3000
 }
 
 variable "private_key_name" {
