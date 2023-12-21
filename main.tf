@@ -183,6 +183,7 @@ module "ecs-pipeline" {
   compute_type         = var.codebuild_compute_type
   build_container_type = var.build_container_type
   image_identifier     = var.image_identifier
+  deployment_timeout   = var.ecs_deployment_timeout
   secret_id            = var.secrets_manager_arn == null ? aws_secretsmanager_secret.this[0].id : var.secrets_manager_arn
 
   env_vars = {
@@ -299,6 +300,8 @@ module "load-balancer" {
   instance_id           = one(module.ec2[*].instance_id)
   target_type           = [var.create_ec2_deployment ? "instance" : "ip"]
   create_ec2_deployment = var.create_ec2_deployment
+  health_check_interval = var.health_check_interval
+  health_check_timeout  = var.health_check_timeout
 }
 
 module "security-group-lb" {
