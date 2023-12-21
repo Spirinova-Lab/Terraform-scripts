@@ -202,9 +202,10 @@ resource "aws_codepipeline" "this_2" {
       input_artifacts = ["build_output"]
 
       configuration = {
-        "ClusterName" = var.cluster_name
-        "ServiceName" = var.service_name
-        "FileName"    = "imagedefinitions.json"
+        "ClusterName"       = var.cluster_name
+        "ServiceName"       = var.service_name
+        "FileName"          = "imagedefinitions.json"
+        "DeploymentTimeout" = var.deployment_timeout
       }
     }
   }

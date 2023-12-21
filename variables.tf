@@ -296,6 +296,12 @@ variable "source_owner" {
   default     = "ThirdParty"
 }
 
+variable "ecs_deployment_timeout" {
+  type        = number
+  description = "The Amazon ECS deployment action timeout in minutes. The timeout is configurable up to the maximum default timeout for this action."
+  default     = 10
+}
+
 ######################## LOAD BALANCER ################################
 
 variable "load_balancer_name" {
@@ -328,6 +334,17 @@ variable "health_check_paths" {
   default     = ["/"]
 }
 
+variable "health_check_timeout" {
+  type        = number
+  description = "Amount of time, in seconds, during which no response from a target means a failed health check."
+  default     = 30
+}
+
+variable "health_check_interval" {
+  type        = number
+  description = "Approximate amount of time, in seconds, between health checks of an individual target"
+  default     = 60
+}
 
 ################## EXTRA Values ######################
 

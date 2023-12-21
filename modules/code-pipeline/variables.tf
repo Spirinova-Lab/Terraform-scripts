@@ -182,3 +182,9 @@ variable "secret_id" {
   description = "ARN of the secrets manager"
   default     = null
 }
+
+variable "deployment_timeout" {
+  type        = number
+  description = "The Amazon ECS deployment action timeout in minutes. The timeout is configurable up to the maximum default timeout for this action."
+  default     = 10
+}
