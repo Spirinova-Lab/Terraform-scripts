@@ -17,7 +17,7 @@ resource "aws_eks_node_group" "ng" {
   }
 
   lifecycle {
-    create_before_destroy = true
+    # create_before_destroy = true
     ignore_changes = [
       launch_template[0].version,
       scaling_config[0].desired_size
