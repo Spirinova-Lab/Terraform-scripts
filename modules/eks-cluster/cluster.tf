@@ -20,4 +20,11 @@ resource "aws_eks_cluster" "cluster" {
     Name                                   = var.name
     "alpha.eksctl.io/cluster-name"         = var.name
   }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
+    aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly
+  ]
+
 }

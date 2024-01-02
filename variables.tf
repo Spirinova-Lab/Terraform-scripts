@@ -189,7 +189,7 @@ variable "eks_cluster_name" {
 variable "cluster_version" {
   type        = string
   description = "Version of the EKS cluster"
-  default     = "1.27"
+  default     = "1.28"
 }
 
 variable "node_ami_type" {
